@@ -268,3 +268,87 @@ app.get('/', (req, res) => {
 app.listen(port, '0.0.0.0', () => {
   console.log(`✅ Keep-alive server listening on port ${port}`);
 });
+// =============== LINKEDIN INTEGRATION ===============
+const axios = require('axios');
+
+const LINKEDIN_ACCESS_TOKEN = process.env.LINKEDIN_ACCESS_TOKEN;
+const LINKEDIN_PERSON_ID = process.env.LINKEDIN_PERSON_ID;
+
+async function postToLinkedIn(text) {
+  if (!LINKEDIN_ACCESS_TOKEN) {
+    throw new Error('LINKEDIN_ACCESS_TOKEN not configured');
+  }
+  
+  try {
+    const response = await axios.post(
+      'https://api.linkedin.com/v2/ugcPosts',
+      {
+        author: `urn:li:person:${LINKEDIN_PERSON_ID}`,
+        lifecycleState: 'PUBLISHED',
+        specificContent: {
+          'com.linkedin.ugc.ShareContent': {
+            shareCommentary: {
+              text: text
+            },
+            shareMediaCategory: 'NONE'
+          }
+        },
+        visibility: {
+          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${LINKEDIN_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('LinkedIn Error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || error.message);
+  }
+}
+
+// Command: Post a random post to LinkedIn
+bot.onText(/\/linkedinpost$/, async (msg) => {
+  if (!isAdmin(msg.from.id)) return;
+  const m = await bot.sendMessage(msg.chat.id, "⏳ Posting to LinkedIn...");
+  
+  try {
+    const p = getRandom();
+    await postToLinkedIn(p);
+    await bot.editMessageText(
+      `✅ Posted to LinkedIn!\n\n📝 ${p.substring(0, 100)}${p.length > 100 ? '...' : ''}`,
+      { chat_id: msg.chat.id, message_id: m.message_id }
+    );
+  } catch (e) {
+    await bot.editMessageText(
+      `❌ Failed to post to LinkedIn: ${e.message}`,
+      { chat_id: msg.chat.id, message_id: m.message_id }
+    );
+  }
+});
+
+// Command: Post custom text to LinkedIn
+bot.onText(/\/linkedin (.+)/, async (msg, match) => {
+  if (!isAdmin(msg.from.id)) return;
+  const text = match[1];
+  const m = await bot.sendMessage(msg.chat.id, "⏳ Posting to LinkedIn...");
+  
+  try {
+    await postToLinkedIn(text);
+    await bot.editMessageText(
+      `✅ Posted to LinkedIn!\n\n📝 ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`,
+      { chat_id: msg.chat.id, message_id: m.message_id }
+    );
+  } catch (e) {
+    await bot.editMessageText(
+      `❌ Failed to post to LinkedIn: ${e.message}`,
+      { chat_id: msg.chat.id, message_id: m.message_id }
+    );
+  }
+});
+
+console.log("🔗 LinkedIn integration loaded");
