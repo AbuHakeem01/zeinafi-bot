@@ -256,3 +256,15 @@ cron.schedule("0 20 * * *", async () => {
 console.log("🤖 Zeina Fi Agent running — @ZFAIAbot → " + CHANNEL);
 console.log("⏰ Schedule: 08:00 | 12:00 | 17:00 | 20:00 UTC");
 console.log("📦 50+ built-in posts — no API key needed");
+// Keep the bot alive for Render by binding to a port
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 10000;
+
+app.get('/', (req, res) => {
+  res.send('🤖 Zeina Fi Bot is running!');
+});
+
+app.listen(port, '0.0.0.0', () => {
+  console.log(`✅ Keep-alive server listening on port ${port}`);
+});
