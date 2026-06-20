@@ -11,6 +11,3 @@
   },
   "engines": { "node": "18.x" }
 }
-git add bot.js package.json
-git commit -m "Added LinkedIn posting integration"
-git push
